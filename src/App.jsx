@@ -6,8 +6,9 @@ import { BottomPanel }  from './components/BottomPanel';
 import { CommitDialog } from './components/CommitDialog';
 import { TweaksPanel }  from './components/TweaksPanel';
 import { IcSpark, IcFolder, IcChevron } from './components/Icons';
-import { QUERIES, DEFAULT_QUERY, RESULT_COLUMNS, RESULT_ROWS, HISTORY } from './data/mockData';
-import { executeQuery } from './api/queries';
+import { HISTORY } from './data/mockData';
+import { executeQuery, fetchQueries } from './api/queries';
+import { getBranches, createBranch } from './api/github';
 
 export default function App() {
   const [tweaks, setTweaks] = React.useState({
@@ -24,44 +25,82 @@ export default function App() {
     html.dataset.accent = tweaks.accent;
   }, [tweaks.theme, tweaks.accent]);
 
+  // Queries from API
+  const [queries, setQueries] = React.useState([]);
+  const [queriesLoading, setQueriesLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetchQueries()
+      .then(data => {
+        setQueries(data);
+        setQueriesLoading(false);
+      })
+      .catch(err => {
+        console.error('[API] fetchQueries failed:', err);
+        setQueriesLoading(false);
+      });
+  }, []);
+
+  // Branches from API
+  const [currentBranch, setCurrentBranch] = React.useState('main');
+  const [branches, setBranches] = React.useState(['main']);
+
+  React.useEffect(() => {
+    getBranches()
+      .then(data => {
+        setCurrentBranch(data.current || 'main');
+        setBranches(data.branches || ['main']);
+      })
+      .catch(err => {
+        console.error('[API] getBranches failed:', err);
+      });
+  }, []);
+
+  const handleCreateBranch = async (name) => {
+    try {
+      await createBranch(name);
+      setCurrentBranch(name);
+      setBranches(prev => [...prev, name]);
+    } catch (err) {
+      console.error('[API] createBranch failed:', err);
+    }
+  };
+
+  const handleBranchChange = (name) => {
+    setCurrentBranch(name);
+  };
+
   // App state
   const [env,     setEnv]     = React.useState("TRN");
   const [running, setRunning] = React.useState(false);
   const [result,  setResult]  = React.useState({
-    columns: RESULT_COLUMNS,
-    rows: RESULT_ROWS,
-    took: 46,
-    plan: "Clustered Index Seek + Hash Match Join",
+    columns: [],
+    rows: [],
+    took: 0,
+    plan: "",
   });
   const [view,   setView]   = React.useState("preview");
   const [prOpen, setPrOpen] = React.useState(false);
 
   // Tabs
-  const [tabs, setTabs] = React.useState([
-    { id: "q1", name: "operations_assemblage.sql", dirty: true,  branch: "feature/vr-ops-v3" },
-    { id: "q5", name: "operations_panneaux.sql",   dirty: false, branch: "fix/pg-order-116"  },
-  ]);
-  const [activeTab, setActiveTab] = React.useState("q1");
-  const activeQueryMeta = QUERIES.find(q => q.id === activeTab) || QUERIES[0];
+  const [tabs, setTabs] = React.useState([]);
+  const [activeTab, setActiveTab] = React.useState(null);
+  const activeQueryMeta = queries.find(q => q.id === activeTab) || queries[0] || { id: '', name: '', folder: '', branch: 'main' };
 
   // Editor buffers (one per tab)
-  const [buffers, setBuffers] = React.useState({
-    q1: DEFAULT_QUERY,
-    q5: `-- Operations panneaux portes de garage
-SELECT
-    op.num_ordre,
-    op.sequence,
-    op.libelle,
-    art.ref_article,
-    art.dimensions
-FROM   production.ordres_fabrication op
-JOIN   articles art ON art.id_article = op.id_article
-WHERE  op.famille_produit = 'PG'
-  AND  op.statut = 'PLANIFIE'
-ORDER  BY op.num_ordre, op.sequence;`,
-  });
+  const [buffers, setBuffers] = React.useState({});
+  const [baselines, setBaselines] = React.useState({});
 
-  const [baselines] = React.useState({ q1: DEFAULT_QUERY, q5: buffers.q5 });
+  // Initialize first tab when queries load
+  React.useEffect(() => {
+    if (queries.length > 0 && tabs.length === 0) {
+      const first = queries[0];
+      setTabs([{ id: first.id, name: first.name, dirty: false, branch: first.branch }]);
+      setActiveTab(first.id);
+      setBuffers({ [first.id]: first.sql || `-- ${first.name}\nSELECT 1;` });
+      setBaselines({ [first.id]: first.sql || '' });
+    }
+  }, [queries, tabs.length]);
   const code    = buffers[activeTab] || "";
   const setCode = (v) => setBuffers(b => ({ ...b, [activeTab]: v }));
   const dirty   = code !== (baselines[activeTab] || "");
@@ -69,10 +108,13 @@ ORDER  BY op.num_ordre, op.sequence;`,
   // Sidebar: open or add a tab
   const pick = (id) => {
     if (!tabs.some(t => t.id === id)) {
-      const meta = QUERIES.find(q => q.id === id);
+      const meta = queries.find(q => q.id === id);
       if (meta) {
         setTabs(t => [...t, { id, name: meta.name, dirty: false, branch: meta.branch }]);
-        if (!buffers[id]) setBuffers(b => ({ ...b, [id]: `-- ${meta.name}\nSELECT 1;` }));
+        if (!buffers[id]) {
+          setBuffers(b => ({ ...b, [id]: meta.sql || `-- ${meta.name}\nSELECT 1;` }));
+          setBaselines(bl => ({ ...bl, [id]: meta.sql || '' }));
+        }
       }
     }
     setActiveTab(id);
@@ -117,7 +159,7 @@ ORDER  BY op.num_ordre, op.sequence;`,
 
   return (
     <div className="app" data-layout={tweaks.layout} data-density={tweaks.density}>
-      <Sidebar queries={QUERIES} activeId={activeTab} onPick={pick} onNew={onNew}/>
+      <Sidebar queries={queries} activeId={activeTab} onPick={pick} onNew={onNew} loading={queriesLoading}/>
 
       <div className="main">
         <TopBar
@@ -127,7 +169,10 @@ ORDER  BY op.num_ordre, op.sequence;`,
           dirty={dirty}
           tabs={tabs.map(t => ({ ...t, dirty: t.id === activeTab ? dirty : t.dirty }))}
           activeTab={activeTab} onTab={setActiveTab} onCloseTab={closeTab}
-          branch={activeQueryMeta.branch}
+          branch={currentBranch}
+          branches={branches}
+          onBranchChange={handleBranchChange}
+          onCreateBranch={handleCreateBranch}
         />
 
         <div className="workspace">
@@ -162,7 +207,8 @@ ORDER  BY op.num_ordre, op.sequence;`,
         onClose={() => setPrOpen(false)}
         query={code}
         baseQuery={baselines[activeTab] || ""}
-        branch={activeQueryMeta.branch}
+        branch={currentBranch}
+        queryId={activeTab}
       />
 
       {!tweaksOpen && (

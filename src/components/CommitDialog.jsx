@@ -1,25 +1,98 @@
 import React from 'react';
 import { IcX, IcBranch, IcFile, IcPlus, IcCheck, IcAlert, IcCommit } from './Icons';
-import { createPullRequest } from '../api/github';
+import { createPullRequest, commitChanges } from '../api/github';
+import { saveQuery } from '../api/queries';
 
-export function CommitDialog({ open, onClose, query, baseQuery, branch }) {
-  const [title,     setTitle]     = React.useState("feat(vr): ajout duree_standard_min sur ops assemblage");
-  const [body,      setBody]      = React.useState("Ajoute la colonne `duree_standard_min` pour afficher la duree standard sur les ecrans de l'atelier VR.\n\nTeste sur TRN — ok sur les OF du 22/04.");
-  const [step,      setStep]      = React.useState(0); // 0 review · 1 pushing · 2 done
-  const [reviewers, setReviewers] = React.useState(["a.meyer", "c.fischer"]);
+export function CommitDialog({ open, onClose, query, baseQuery, branch, queryId }) {
+  const [title,     setTitle]     = React.useState("");
+  const [body,      setBody]      = React.useState("");
+  const [step,      setStep]      = React.useState(0); // 0 review · 1 pushing · 2 done · 3 error
+  const [reviewers, setReviewers] = React.useState([]);
+  const [error,     setError]     = React.useState(null);
+  const [prResult,  setPrResult]  = React.useState(null);
+  const [committed, setCommitted] = React.useState(false);
+
+  // Reset state when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      setStep(0);
+      setError(null);
+      setPrResult(null);
+      setTitle("");
+      setBody("");
+      setCommitted(false);
+    }
+  }, [open]);
+
+  // Derive file path from queryId
+  const filePath = queryId ? `sql/${queryId}` : 'sql/query.sql';
 
   if (!open) return null;
 
   const diff = computeDiff(baseQuery, query);
 
-  const onSubmit = async () => {
+  const onCommitOnly = async () => {
+    if (branch === 'main') {
+      setError('Vous devez creer une branche avant de commiter. Cliquez sur le nom de la branche dans la barre.');
+      setStep(3);
+      return;
+    }
+
+    if (!title.trim()) {
+      setError('Le titre du commit est requis');
+      setStep(3);
+      return;
+    }
+
     setStep(1);
+    setError(null);
     try {
-      await createPullRequest({ branch, title, body, reviewers, file: `sql/vr/operations_assemblage.sql` });
+      // 1. Save the query file
+      await saveQuery(queryId, query);
+
+      // 2. Commit changes
+      await commitChanges(title, [filePath]);
+
+      setCommitted(true);
+      setStep(0); // Return to review step but show committed state
+    } catch (err) {
+      console.error('[API] commit failed:', err);
+      setError(err.message || 'Erreur lors du commit');
+      setStep(3);
+    }
+  };
+
+  const onPushAndPR = async () => {
+    if (branch === 'main') {
+      setError('Vous devez creer une branche avant de creer une PR. Cliquez sur le nom de la branche dans la barre.');
+      setStep(3);
+      return;
+    }
+
+    if (!title.trim()) {
+      setError('Le titre est requis');
+      setStep(3);
+      return;
+    }
+
+    setStep(1);
+    setError(null);
+    try {
+      // If not yet committed, save and commit first
+      if (!committed) {
+        await saveQuery(queryId, query);
+        await commitChanges(title, [filePath]);
+      }
+
+      // Push and create PR
+      const result = await createPullRequest({ branch, title, body, reviewers, file: filePath });
+      setPrResult(result);
+      setStep(2);
     } catch (err) {
       console.error('[API] createPullRequest failed:', err);
+      setError(err.message || 'Erreur lors de la creation de la PR');
+      setStep(3);
     }
-    setStep(2);
   };
 
   return (
@@ -64,7 +137,7 @@ export function CommitDialog({ open, onClose, query, baseQuery, branch }) {
                     </div>
                     <div className="pr-field">
                       <label className="pr-label">Fichier</label>
-                      <div className="pr-static"><IcFile size={12}/> sql/vr/operations_assemblage.sql</div>
+                      <div className="pr-static"><IcFile size={12}/> {filePath}</div>
                     </div>
                   </div>
 
@@ -105,12 +178,18 @@ export function CommitDialog({ open, onClose, query, baseQuery, branch }) {
 
             <div className="modal-foot">
               <div className="modal-foot-info">
-                Apres la creation: GitHub Actions deploiera sur <b>TRN</b>. Le merge declenchera le deploiement sur <b>PRD</b>.
+                {committed
+                  ? <><b>Commit effectue.</b> Vous pouvez maintenant creer la PR ou continuer a modifier.</>
+                  : <>Apres la creation: GitHub Actions deploiera sur <b>TRN</b>. Le merge declenchera le deploiement sur <b>PRD</b>.</>
+                }
               </div>
               <div className="modal-foot-actions">
                 <button className="btn-ghost" onClick={onClose}>Annuler</button>
-                <button className="btn btn-commit" onClick={onSubmit}>
-                  <IcCommit size={13}/> Commit · Push · Creer la PR
+                <button className="btn btn-secondary" onClick={onCommitOnly} disabled={committed}>
+                  <IcCommit size={13}/> {committed ? 'Deja commite' : 'Commit seulement'}
+                </button>
+                <button className="btn btn-commit" onClick={onPushAndPR}>
+                  <IcBranch size={13}/> Push & Creer la PR
                 </button>
               </div>
             </div>
@@ -128,8 +207,8 @@ export function CommitDialog({ open, onClose, query, baseQuery, branch }) {
         {step === 2 && (
           <div className="modal-center">
             <div className="success-mark"><IcCheck size={26}/></div>
-            <div className="pr-status-title">Pull Request #247 creee</div>
-            <div className="pr-status-sub">feat(vr): ajout duree_standard_min sur ops assemblage</div>
+            <div className="pr-status-title">Pull Request #{prResult?.number || '???'} creee</div>
+            <div className="pr-status-sub">{title}</div>
             <div className="pr-status-actions-stack">
               <div className="pr-actions-item">
                 <span className="ga-dot ga-run"/>
@@ -148,7 +227,23 @@ export function CommitDialog({ open, onClose, query, baseQuery, branch }) {
             </div>
             <div className="modal-foot-actions" style={{ marginTop: 20 }}>
               <button className="btn-ghost" onClick={onClose}>Fermer</button>
-              <button className="btn btn-run">Ouvrir dans GitHub →</button>
+              {prResult?.url && (
+                <a href={prResult.url} target="_blank" rel="noopener noreferrer" className="btn btn-run">
+                  Ouvrir dans GitHub →
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="modal-center">
+            <div className="error-mark"><IcAlert size={26}/></div>
+            <div className="pr-status-title">Erreur</div>
+            <div className="pr-status-sub">{error}</div>
+            <div className="modal-foot-actions" style={{ marginTop: 20 }}>
+              <button className="btn-ghost" onClick={onClose}>Fermer</button>
+              <button className="btn btn-run" onClick={() => setStep(0)}>Reessayer</button>
             </div>
           </div>
         )}
