@@ -1,4 +1,4 @@
-select distinct /*Important*/
+select distinct /*Important */
 op.ProgramNumber as "-1_ProgramNumber", 
 op.CartPosition as "-1_CartPosition", 
 op.NumOF as "-1_OFNumber",
