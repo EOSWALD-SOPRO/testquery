@@ -54,7 +54,7 @@ export async function getBranches() {
 }
 
 /**
- * Create a new branch
+ * Create a new branch (and the backend checks it out)
  */
 export async function createBranch(name) {
   if (USE_MOCK) {
@@ -64,6 +64,20 @@ export async function createBranch(name) {
   return apiFetch('/github/branches', {
     method: 'POST',
     body: JSON.stringify({ name }),
+  });
+}
+
+/**
+ * Switch to an existing local branch on the backend
+ */
+export async function checkoutBranch(branch) {
+  if (USE_MOCK) {
+    return { branch };
+  }
+
+  return apiFetch('/github/checkout', {
+    method: 'POST',
+    body: JSON.stringify({ branch }),
   });
 }
 

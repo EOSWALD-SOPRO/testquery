@@ -541,72 +541,31 @@ kbd {
 }
 .editor-badge-mod { background: var(--accent-soft); color: var(--accent); }
 
-/* Editor */
+/* Editor — CodeMirror 6 fills the panel completely, fixed size regardless of content.
+   @uiw/react-codemirror inserts a `.cm-theme` wrapper between us and `.cm-editor`,
+   so both intermediate containers must be told to fill their parent. */
 .editor-wrap {
   flex: 1;
-  display: grid;
-  grid-template-columns: 44px 1fr;
+  display: flex;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
   background: var(--panel);
 }
-.editor-gutter {
-  padding: 10px 0;
-  background: var(--panel);
-  border-right: 1px solid var(--border-soft);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-mute);
-  user-select: none;
-  text-align: right;
-  overflow: hidden;
+.editor-wrap > .cm-theme,
+.editor-wrap > [class*="cm-theme"] {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
 }
-.editor-ln { padding: 0 10px 0 0; line-height: 1.55; }
-
-.editor-scroll {
-  position: relative;
-  overflow: auto;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  line-height: 1.55;
+.editor-wrap .cm-editor {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  outline: none;
 }
-.app[data-density="compact"] .editor-scroll { font-size: 11.5px; line-height: 1.5; }
-
-.editor-pre,
-.editor-ta {
-  margin: 0;
-  padding: 10px 14px;
-  white-space: pre;
-  tab-size: 4;
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  min-height: 100%;
-  min-width: 100%;
-}
-.editor-pre {
-  pointer-events: none;
-  color: var(--text);
-}
-.editor-ta {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  color: transparent;
-  caret-color: var(--text);
-  background: transparent;
-  resize: none;
-  overflow: auto;
-}
-.editor-ta::selection { background: oklch(from var(--accent) l c h / 0.3); }
-
-/* Syntax tokens */
-.tk-kw { color: var(--sql-kw); font-weight: 600; }
-.tk-st { color: var(--sql-st); }
-.tk-nu { color: var(--sql-nu); }
-.tk-cm { color: var(--sql-cm); font-style: italic; }
-.tk-pu { color: var(--sql-pu); }
-.tk-id { color: var(--sql-id); }
-.tk-ws { white-space: pre; }
+.editor-wrap .cm-editor.cm-focused { outline: none; }
 
 /* =========================================================
    Bottom panel
@@ -719,148 +678,6 @@ kbd {
   color: var(--text-dim);
   border: 1px solid var(--border-soft);
 }
-
-/* =========================================================
-   Shop-floor preview
-   ========================================================= */
-.sf-wrap {
-  padding: 20px;
-  display: flex; flex-direction: column; gap: 16px;
-}
-.sf-meta {
-  display: flex; align-items: center; gap: 32px;
-  padding: 12px 18px;
-  background: var(--bg-elev);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius);
-}
-.sf-meta-label {
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-mute);
-  margin-bottom: 2px;
-}
-.sf-meta-value { font-size: 12px; color: var(--text); font-weight: 500; }
-.sf-meta-fill { flex: 1; }
-
-.sf-screen {
-  background: #08090c;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;
-  color: #e9edf5;
-  font-family: var(--font-ui);
-  box-shadow: 0 30px 60px -30px rgba(0,0,0,0.7);
-  position: relative;
-}
-.sf-screen::before {
-  content: "";
-  position: absolute; inset: 0;
-  background: radial-gradient(ellipse at top, rgba(255,255,255,0.04), transparent 60%);
-  pointer-events: none;
-}
-.sf-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 22px 32px;
-  background: linear-gradient(180deg, #0f1117, #0a0b10);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.sf-poste-code {
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.14em;
-  color: var(--accent);
-  margin-bottom: 4px;
-}
-.sf-poste-name { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
-.sf-clock { text-align: right; }
-.sf-time {
-  font-family: var(--font-mono);
-  font-size: 42px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-.sf-date { font-size: 13px; color: #7a829a; margin-top: 4px; text-transform: capitalize; }
-
-.sf-now {
-  padding: 28px 32px;
-  background: linear-gradient(180deg, rgba(255,166,42,0.08), transparent);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  position: relative;
-}
-.sf-now-tag {
-  display: inline-block;
-  padding: 4px 12px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  font-weight: 700;
-  border-radius: 4px;
-}
-.sf-now-main { margin: 14px 0 24px; }
-.sf-of {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  color: #7a829a;
-  letter-spacing: 0.08em;
-}
-.sf-op {
-  font-size: 36px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin-top: 6px;
-}
-.sf-now-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-}
-.sf-k {
-  font-size: 11px;
-  color: #7a829a;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.sf-v {
-  font-family: var(--font-mono);
-  font-size: 17px;
-  color: #e9edf5;
-}
-.sf-v-big { font-size: 32px; font-weight: 600; color: var(--accent); }
-
-.sf-queue { padding: 14px 32px 22px; }
-.sf-queue-head {
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  color: #6a7289;
-  font-weight: 600;
-  padding: 6px 0 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.sf-q-row {
-  display: grid;
-  grid-template-columns: 40px 140px 1fr 180px 100px 60px 60px;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  font-family: var(--font-mono);
-  font-size: 13px;
-}
-.sf-q-seq { color: var(--accent); font-weight: 600; }
-.sf-q-of  { color: #a4adc5; font-size: 12px; }
-.sf-q-op  { color: #e9edf5; font-family: var(--font-ui); font-weight: 500; font-size: 14px; }
-.sf-q-art { color: #7a829a; font-size: 11px; }
-.sf-q-dim { color: #a4adc5; font-size: 11px; text-align: right; }
-.sf-q-qty { color: var(--accent); text-align: right; font-weight: 600; }
-.sf-q-dur { color: #7a829a; text-align: right; font-size: 11px; }
-
-.sf-empty { padding: 60px; text-align: center; color: #6a7289; }
 
 /* History / Messages */
 .hist { padding: 4px 0; }

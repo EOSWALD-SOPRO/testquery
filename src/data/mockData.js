@@ -2,42 +2,18 @@
 // Queries use SQL Server syntax (GETDATE, DATEADD, TOP, etc.)
 
 export const QUERIES = [
-  { id: "q1",  folder: "Volets Roulants",  name: "operations_assemblage.sql",     branch: "feature/vr-ops-v3",    status: "modified", author: "t.laurent" },
-  { id: "q2",  folder: "Volets Roulants",  name: "composants_tablier.sql",        branch: "main",                 status: "clean",    author: "t.laurent" },
+  { id: "q1",  folder: "Volets Roulants",  name: "operations_assemblage.sql",     branch: "feature/vr-ops-v3",    status: "modified", author: "e.oswald" },
+  { id: "q2",  folder: "Volets Roulants",  name: "composants_tablier.sql",        branch: "main",                 status: "clean",    author: "e.oswald" },
   { id: "q3",  folder: "Volets Roulants",  name: "nomenclature_coffre.sql",       branch: "main",                 status: "clean",    author: "a.meyer"   },
   { id: "q4",  folder: "Volets Roulants",  name: "decoupe_lames.sql",             branch: "main",                 status: "clean",    author: "a.meyer"   },
   { id: "q5",  folder: "Portes de Garage", name: "operations_panneaux.sql",       branch: "fix/pg-order-116",     status: "pr-open",  author: "c.fischer" },
   { id: "q6",  folder: "Portes de Garage", name: "ferrures_laterales.sql",        branch: "main",                 status: "clean",    author: "c.fischer" },
-  { id: "q7",  folder: "Portes de Garage", name: "motorisation_config.sql",       branch: "main",                 status: "clean",    author: "t.laurent" },
+  { id: "q7",  folder: "Portes de Garage", name: "motorisation_config.sql",       branch: "main",                 status: "clean",    author: "e.oswald" },
   { id: "q8",  folder: "Stores",           name: "operations_toile.sql",          branch: "main",                 status: "clean",    author: "a.meyer"   },
   { id: "q9",  folder: "Stores",           name: "composants_bras.sql",           branch: "main",                 status: "clean",    author: "a.meyer"   },
-  { id: "q10", folder: "Commun",           name: "etiquettes_expedition.sql",     branch: "main",                 status: "clean",    author: "t.laurent" },
+  { id: "q10", folder: "Commun",           name: "etiquettes_expedition.sql",     branch: "main",                 status: "clean",    author: "e.oswald" },
   { id: "q11", folder: "Commun",           name: "ordre_fabrication_header.sql",  branch: "main",                 status: "clean",    author: "c.fischer" },
 ];
-
-export const DEFAULT_QUERY = `-- Operations d'assemblage pour volets roulants
--- Affichee sur les ecrans atelier VR-01 a VR-06
-SELECT
-    op.num_ordre,
-    op.sequence,
-    op.code_operation,
-    op.libelle,
-    art.ref_article,
-    art.designation,
-    art.dimensions,
-    art.quantite,
-    pos.poste_travail,
-    pos.duree_standard_min,
-    ops.date_prevue
-FROM   production.ordres_fabrication op
-JOIN   articles          art ON art.id_article = op.id_article
-JOIN   postes            pos ON pos.id_poste   = op.id_poste
-JOIN   ordre_sequences   ops ON ops.id_ordre   = op.id_ordre
-WHERE  op.famille_produit = 'VR'
-  AND  op.statut IN ('PLANIFIE', 'EN_COURS')
-  AND  ops.date_prevue >= CAST(GETDATE() AS DATE)
-  AND  ops.date_prevue <  DATEADD(day, 2, CAST(GETDATE() AS DATE))
-ORDER  BY pos.poste_travail, ops.date_prevue, op.sequence;`;
 
 export const RESULT_COLUMNS = [
   "num_ordre", "sequence", "code_operation", "libelle",
@@ -62,8 +38,8 @@ export const RESULT_ROWS = [
 ];
 
 export const HISTORY = [
-  { hash: "a7c3f21", msg: "feat(vr): ajout duree_standard_min",               author: "t.laurent",  when: "il y a 12 min", branch: "feature/vr-ops-v3" },
-  { hash: "e91b0ac", msg: "fix: filtre statut EN_COURS manquant",             author: "t.laurent",  when: "il y a 2 h",    branch: "feature/vr-ops-v3" },
+  { hash: "a7c3f21", msg: "feat(vr): ajout duree_standard_min",               author: "e.oswald",  when: "il y a 12 min", branch: "feature/vr-ops-v3" },
+  { hash: "e91b0ac", msg: "fix: filtre statut EN_COURS manquant",             author: "e.oswald",  when: "il y a 2 h",    branch: "feature/vr-ops-v3" },
   { hash: "4f5d9e2", msg: "feat: passage a ordre_sequences pour le planning",  author: "a.meyer",    when: "hier, 17:42",   branch: "main" },
   { hash: "b2ac176", msg: "chore: cleanup jointures inutiles",                author: "c.fischer",  when: "hier, 09:10",   branch: "main" },
 ];

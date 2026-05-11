@@ -17,7 +17,6 @@ export const IcX        = (p) => <Icon {...p}><path d="M3 3l10 10"/><path d="M13
 export const IcPlus     = (p) => <Icon {...p}><path d="M8 3v10"/><path d="M3 8h10"/></Icon>;
 export const IcChevron  = (p) => <Icon {...p}><path d="M6 4l4 4-4 4"/></Icon>;
 export const IcChevDn   = (p) => <Icon {...p}><path d="M4 6l4 4 4-4"/></Icon>;
-export const IcMonitor  = (p) => <Icon {...p}><rect x="1.5" y="2.5" width="13" height="9" rx="1"/><path d="M5 14h6"/><path d="M8 11.5V14"/></Icon>;
 export const IcHistory  = (p) => <Icon {...p}><path d="M2 8a6 6 0 106-6"/><path d="M2 3v3h3"/><path d="M8 5v3l2 2"/></Icon>;
 export const IcSpark    = (p) => <Icon {...p}><path d="M8 2v4M8 10v4M2 8h4M10 8h4"/></Icon>;
 export const IcAlert    = (p) => <Icon {...p}><path d="M8 2l6.5 11H1.5L8 2z"/><path d="M8 6v3"/><circle cx="8" cy="11" r=".5" fill="currentColor"/></Icon>;
@@ -26,5 +25,4 @@ export const IcCopy     = (p) => <Icon {...p}><rect x="5" y="5" width="8" height
 export const IcTable    = (p) => <Icon {...p}><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 7h12"/><path d="M6 3v10"/></Icon>;
 export const IcSettings = (p) => <Icon {...p}><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></Icon>;
 export const IcUser     = (p) => <Icon {...p}><circle cx="8" cy="6" r="2.5"/><path d="M3 13c0-2.5 2.2-4 5-4s5 1.5 5 4"/></Icon>;
-export const IcEye      = (p) => <Icon {...p}><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></Icon>;
 export const IcBolt     = (p) => <Icon {...p}><path d="M9 1L3 9h4l-1 6 6-8H8l1-6z" fill="currentColor" stroke="none"/></Icon>;

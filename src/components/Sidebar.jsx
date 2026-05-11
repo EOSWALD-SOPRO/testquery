@@ -66,7 +66,7 @@ export function Sidebar({ queries, activeId, onPick, onNew }) {
         <div className="user-chip">
           <div className="avatar">TL</div>
           <div>
-            <div className="user-name">t.laurent</div>
+            <div className="user-name">e.oswald</div>
             <div className="user-sub">devops · SOPROFEN</div>
           </div>
           <button className="icon-btn" title="Parametres"><IcSettings size={14}/></button>

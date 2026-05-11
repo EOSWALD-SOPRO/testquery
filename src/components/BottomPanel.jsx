@@ -1,5 +1,4 @@
-import React from 'react';
-import { IcTable, IcMonitor, IcHistory, IcAlert, IcBranch, IcDiff, IcEye } from './Icons';
+import { IcTable, IcHistory, IcAlert, IcBranch, IcDiff } from './Icons';
 
 export function BottomPanel({ result, env, query, history, view, onView }) {
   return (
@@ -8,9 +7,6 @@ export function BottomPanel({ result, env, query, history, view, onView }) {
         <button className={`btab${view === "results"  ? " is-active" : ""}`} onClick={() => onView("results")}>
           <IcTable size={13}/> Resultats
           {result && <span className="btab-count">{result.rows.length}</span>}
-        </button>
-        <button className={`btab${view === "preview"  ? " is-active" : ""}`} onClick={() => onView("preview")}>
-          <IcMonitor size={13}/> Apercu ecran atelier
         </button>
         <button className={`btab${view === "history"  ? " is-active" : ""}`} onClick={() => onView("history")}>
           <IcHistory size={13}/> Historique
@@ -35,7 +31,6 @@ export function BottomPanel({ result, env, query, history, view, onView }) {
 
       <div className="bottom-body">
         {view === "results"  && <ResultsTable result={result}/>}
-        {view === "preview"  && <ShopFloorPreview rows={result?.rows || []} columns={result?.columns || []}/>}
         {view === "history"  && <HistoryList items={history}/>}
         {view === "messages" && <MessagesList env={env} query={query}/>}
       </div>
@@ -75,81 +70,6 @@ function ResultsTable({ result }) {
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-function ShopFloorPreview({ rows, columns }) {
-  const poste = "VR-02-ASSEMB";
-  const colIdx = col => columns.indexOf(col);
-  const ops = rows.filter(r => r[colIdx("poste_travail")] === poste).slice(0, 5);
-  const now   = ops[0];
-  const queue = ops.slice(1);
-
-  return (
-    <div className="sf-wrap">
-      <div className="sf-meta">
-        <div>
-          <div className="sf-meta-label">Ecran cible</div>
-          <div className="sf-meta-value">VR-02-ASSEMB · ecran mural atelier 1</div>
-        </div>
-        <div>
-          <div className="sf-meta-label">Rafraichissement</div>
-          <div className="sf-meta-value">auto · toutes les 30s</div>
-        </div>
-        <div>
-          <div className="sf-meta-label">Lignes mappees</div>
-          <div className="sf-meta-value">{ops.length} / {rows.length}</div>
-        </div>
-        <div className="sf-meta-fill"/>
-        <button className="btn-ghost"><IcEye size={13}/> Plein ecran</button>
-      </div>
-
-      <div className="sf-screen">
-        <div className="sf-header">
-          <div className="sf-poste">
-            <div className="sf-poste-code">VR-02-ASSEMB</div>
-            <div className="sf-poste-name">Assemblage coffre — Volets roulants</div>
-          </div>
-          <div className="sf-clock">
-            <div className="sf-time">{new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</div>
-            <div className="sf-date">{new Date().toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}</div>
-          </div>
-        </div>
-
-        {now ? (
-          <div className="sf-now">
-            <div className="sf-now-tag">EN COURS</div>
-            <div className="sf-now-main">
-              <div className="sf-of">{now[colIdx("num_ordre")]}</div>
-              <div className="sf-op">{now[colIdx("libelle")]}</div>
-            </div>
-            <div className="sf-now-grid">
-              <div><div className="sf-k">Article</div><div className="sf-v">{now[colIdx("ref_article")]}</div></div>
-              <div><div className="sf-k">Dimensions</div><div className="sf-v">{now[colIdx("dimensions")]} mm</div></div>
-              <div><div className="sf-k">Quantite</div><div className="sf-v sf-v-big">{now[colIdx("quantite")]}</div></div>
-              <div><div className="sf-k">Duree std.</div><div className="sf-v">{now[colIdx("duree_standard_min")]} min</div></div>
-            </div>
-          </div>
-        ) : (
-          <div className="sf-empty">Aucune operation planifiee sur ce poste.</div>
-        )}
-
-        <div className="sf-queue">
-          <div className="sf-queue-head">A SUIVRE</div>
-          {queue.map((r, i) => (
-            <div key={i} className="sf-q-row">
-              <div className="sf-q-seq">#{r[colIdx("sequence")]}</div>
-              <div className="sf-q-of">{r[colIdx("num_ordre")]}</div>
-              <div className="sf-q-op">{r[colIdx("libelle")]}</div>
-              <div className="sf-q-art">{r[colIdx("ref_article")]}</div>
-              <div className="sf-q-dim">{r[colIdx("dimensions")]} mm</div>
-              <div className="sf-q-qty">×{r[colIdx("quantite")]}</div>
-              <div className="sf-q-dur">{r[colIdx("duree_standard_min")]}′</div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

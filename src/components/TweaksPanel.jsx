@@ -37,16 +37,6 @@ export function TweaksPanel({ open, onClose, tweaks, setTweak }) {
              options={[["compact", "Compacte"], ["cozy", "Confort"]]}/>
       </TweakGroup>
 
-      <TweakGroup label="Apercu ecran atelier">
-        <Seg value={tweaks.preview ? "on" : "off"} onChange={v => setTweak("preview", v === "on")}
-             options={[["on", "Visible"], ["off", "Masque"]]}/>
-      </TweakGroup>
-
-      <TweakGroup label="Style resultats">
-        <Seg value={tweaks.resultStyle} onChange={v => setTweak("resultStyle", v)}
-             options={[["table", "Tableau"], ["cards", "Cartes"]]}/>
-      </TweakGroup>
-
       <TweakGroup label="Mise en page">
         <Seg value={tweaks.layout} onChange={v => setTweak("layout", v)}
              options={[["split", "Split H"], ["stack", "Empilee"]]}/>

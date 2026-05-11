@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "PowerShell(function Test-Port\\($port\\) { $c = New-Object System.Net.Sockets.TcpClient; try { $task = $c.ConnectAsync\\('localhost', $port\\); if \\($task.Wait\\(2000\\)\\) { \"Port ${port}: OPEN\" } else { \"Port ${port}: TIMEOUT\" } } catch { \"Port ${port}: CLOSED \\($\\($_.Exception.Message\\)\\)\" } finally { $c.Close\\(\\) } }; Test-Port 1433; Test-Port 62656)"
     ]
   }
 }

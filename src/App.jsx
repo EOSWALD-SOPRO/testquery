@@ -8,12 +8,11 @@ import { TweaksPanel }  from './components/TweaksPanel';
 import { IcSpark, IcFolder, IcChevron } from './components/Icons';
 import { HISTORY } from './data/mockData';
 import { executeQuery, fetchQueries } from './api/queries';
-import { getBranches, createBranch } from './api/github';
+import { getBranches, createBranch, checkoutBranch } from './api/github';
 
 export default function App() {
   const [tweaks, setTweaks] = React.useState({
-    theme: "dark", accent: "amber", density: "cozy",
-    preview: true, resultStyle: "table", layout: "split",
+    theme: "dark", accent: "amber", density: "cozy", layout: "split",
   });
   const setTweak = (k, v) => setTweaks(t => ({ ...t, [k]: v }));
   const [tweaksOpen, setTweaksOpen] = React.useState(false);
@@ -41,33 +40,41 @@ export default function App() {
       });
   }, []);
 
-  // Branches from API
+  // Branches from API — single source of truth is the backend's local git repo
   const [currentBranch, setCurrentBranch] = React.useState('main');
   const [branches, setBranches] = React.useState(['main']);
 
-  React.useEffect(() => {
-    getBranches()
-      .then(data => {
-        setCurrentBranch(data.current || 'main');
-        setBranches(data.branches || ['main']);
-      })
-      .catch(err => {
-        console.error('[API] getBranches failed:', err);
-      });
+  const refreshBranches = React.useCallback(async () => {
+    try {
+      const data = await getBranches();
+      setCurrentBranch(data.current || 'main');
+      setBranches(data.branches || ['main']);
+    } catch (err) {
+      console.error('[API] getBranches failed:', err);
+    }
   }, []);
+
+  React.useEffect(() => { refreshBranches(); }, [refreshBranches]);
 
   const handleCreateBranch = async (name) => {
     try {
       await createBranch(name);
-      setCurrentBranch(name);
-      setBranches(prev => [...prev, name]);
+      await refreshBranches();
     } catch (err) {
       console.error('[API] createBranch failed:', err);
+      alert(`Erreur lors de la creation de la branche: ${err.message || err}`);
     }
   };
 
-  const handleBranchChange = (name) => {
-    setCurrentBranch(name);
+  const handleBranchChange = async (name) => {
+    if (name === currentBranch) return;
+    try {
+      await checkoutBranch(name);
+      await refreshBranches();
+    } catch (err) {
+      console.error('[API] checkoutBranch failed:', err);
+      alert(`Impossible de basculer sur '${name}': ${err.message || err}`);
+    }
   };
 
   // App state
@@ -79,7 +86,7 @@ export default function App() {
     took: 0,
     plan: "",
   });
-  const [view,   setView]   = React.useState("preview");
+  const [view,   setView]   = React.useState("results");
   const [prOpen, setPrOpen] = React.useState(false);
 
   // Tabs
