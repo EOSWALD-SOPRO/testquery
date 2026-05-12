@@ -38,7 +38,7 @@ public sealed class DapperQueryRepository : IQueryRepository
                 wc.Name              AS WorkCenter,
                 wc.Establishment     AS Establishment,
                 am.Name              AS AttributeModel,
-                r.Sql                AS Sql
+                r.Content                AS Sql
             FROM dbo.ProductionScreen ps
             INNER JOIN dbo.WorkCenter     wc ON wc.Id = ps.WorkCenterId
             INNER JOIN dbo.AttributeModel am ON am.Id = ps.AttributeModelId

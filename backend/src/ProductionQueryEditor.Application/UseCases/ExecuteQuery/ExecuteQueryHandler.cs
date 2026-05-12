@@ -27,7 +27,12 @@ public sealed class ExecuteQueryHandler
         if (sqlResult.IsFailure)
             return Result<ExecuteQueryResponse>.Failure(sqlResult.Error!);
 
-        var response = await _executor.ExecuteAsync(sqlResult.Value!, envResult.Value!, ct);
+        // Defensive: clamp non-positive limits to null (= unlimited) instead of failing.
+        // The frontend ships well-formed presets; a 0 or negative value would just produce
+        // an empty result set, which is more confusing than a noop.
+        var rowLimit = cmd.RowLimit is > 0 ? cmd.RowLimit : null;
+
+        var response = await _executor.ExecuteAsync(sqlResult.Value!, envResult.Value!, rowLimit, ct);
         return Result<ExecuteQueryResponse>.Success(response);
     }
 }

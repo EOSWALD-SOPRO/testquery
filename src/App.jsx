@@ -132,11 +132,19 @@ export default function App() {
   // App state
   const [env,     setEnv]     = React.useState("TRN");
   const [running, setRunning] = React.useState(false);
+  // Default to 50 rows. This tool is for debugging production queries, and real-world
+  // queries are scoped by program or OF — so a typical run returns at most a few dozen
+  // rows. The table isn't virtualized either: 2000+ rows already lag noticeably.
+  // 50 covers the normal case and the higher presets exist only for exploratory checks
+  // (or to spot when a filter is missing because the result hits the ceiling).
+  const [rowLimit, setRowLimit] = React.useState(50);
   const [result,  setResult]  = React.useState({
     columns: [],
     rows: [],
     took: 0,
     plan: "",
+    truncated: false,
+    appliedLimit: null,
   });
   const [view,   setView]   = React.useState("results");
   const [prOpen, setPrOpen] = React.useState(false);
@@ -209,14 +217,14 @@ export default function App() {
     setRunning(true);
     setView(v => (v !== "results" ? v : "results"));
     try {
-      const data = await executeQuery(code, env);
+      const data = await executeQuery(code, env, rowLimit);
       setResult(data);
     } catch (err) {
       console.error('[API] executeQuery failed:', err);
     } finally {
       setRunning(false);
     }
-  }, [code, env]);
+  }, [code, env, rowLimit]);
 
   // Keyboard shortcut ⌘↵ / Ctrl+↵
   React.useEffect(() => {
@@ -261,6 +269,7 @@ export default function App() {
       <div className="main">
         <TopBar
           env={env} onEnv={setEnv}
+          rowLimit={rowLimit} onRowLimit={setRowLimit}
           running={running} onRun={run}
           onCommit={() => setPrOpen(true)}
           dirty={dirty}

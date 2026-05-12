@@ -48,5 +48,5 @@ public class QueriesController : ControllerBase
     [HttpPost("execute")]
     [ProducesResponseType(typeof(ExecuteQueryResponse), 200)]
     public async Task<IActionResult> Execute([FromBody] ExecuteQueryRequest req, CancellationToken ct)
-        => (await _execute.HandleAsync(new ExecuteQueryCommand(req.Sql, req.Env), ct)).ToActionResult();
+        => (await _execute.HandleAsync(new ExecuteQueryCommand(req.Sql, req.Env, req.RowLimit), ct)).ToActionResult();
 }

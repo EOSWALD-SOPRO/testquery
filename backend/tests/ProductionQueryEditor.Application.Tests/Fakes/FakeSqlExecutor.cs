@@ -21,12 +21,12 @@ public sealed class FakeSqlExecutor : ISqlExecutor
     };
     public Exception? Throws { get; set; }
 
-    public Task<ExecuteQueryResponse> ExecuteAsync(SqlScript sql, EnvironmentName env, CancellationToken ct)
+    public Task<ExecuteQueryResponse> ExecuteAsync(SqlScript sql, EnvironmentName env, int? rowLimit, CancellationToken ct)
     {
-        Calls.Add(new Call(sql, env, ct));
+        Calls.Add(new Call(sql, env, rowLimit, ct));
         if (Throws is not null) throw Throws;
         return Task.FromResult(Response);
     }
 
-    public sealed record Call(SqlScript Sql, EnvironmentName Env, CancellationToken Ct);
+    public sealed record Call(SqlScript Sql, EnvironmentName Env, int? RowLimit, CancellationToken Ct);
 }

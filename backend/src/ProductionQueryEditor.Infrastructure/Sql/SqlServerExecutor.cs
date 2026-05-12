@@ -23,7 +23,7 @@ public sealed class SqlServerExecutor : ISqlExecutor
         _logger  = logger;
     }
 
-    public async Task<ExecuteQueryResponse> ExecuteAsync(SqlScript sql, EnvironmentName env, CancellationToken ct)
+    public async Task<ExecuteQueryResponse> ExecuteAsync(SqlScript sql, EnvironmentName env, int? rowLimit, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
 
@@ -37,8 +37,19 @@ public sealed class SqlServerExecutor : ISqlExecutor
         for (int i = 0; i < reader.FieldCount; i++) columns[i] = reader.GetName(i);
 
         var rows = new List<object?[]>();
+        var truncated = false;
         while (await reader.ReadAsync(ct))
         {
+            // Stop the reader as soon as we've buffered `rowLimit` rows. Note we don't
+            // inject TOP into the SQL because (a) the script can contain CTEs/ORDER BY
+            // that would conflict, and (b) we want the limit to apply even when the user
+            // writes their own TOP — whichever is smaller wins.
+            if (rowLimit is int limit && rows.Count >= limit)
+            {
+                truncated = true;
+                break;
+            }
+
             var row = new object?[reader.FieldCount];
             for (int i = 0; i < reader.FieldCount; i++)
                 row[i] = reader.IsDBNull(i) ? null : reader.GetValue(i);
@@ -46,16 +57,18 @@ public sealed class SqlServerExecutor : ISqlExecutor
         }
 
         sw.Stop();
-        _logger.LogInformation("ExecuteQuery {Env} -> {RowCount} rows in {Took}ms",
-            env.Value, rows.Count, sw.ElapsedMilliseconds);
+        _logger.LogInformation("ExecuteQuery {Env} -> {RowCount} rows in {Took}ms (limit={Limit}, truncated={Truncated})",
+            env.Value, rows.Count, sw.ElapsedMilliseconds, rowLimit, truncated);
 
         return new ExecuteQueryResponse
         {
-            Columns  = columns,
-            Rows     = rows.ToArray(),
-            RowCount = rows.Count,
-            Took     = sw.ElapsedMilliseconds,
-            Plan     = $"Executed on {env.Value} in {sw.ElapsedMilliseconds}ms",
+            Columns      = columns,
+            Rows         = rows.ToArray(),
+            RowCount     = rows.Count,
+            Took         = sw.ElapsedMilliseconds,
+            Plan         = $"Executed on {env.Value} in {sw.ElapsedMilliseconds}ms",
+            Truncated    = truncated,
+            AppliedLimit = rowLimit,
         };
     }
 }

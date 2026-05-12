@@ -105,4 +105,31 @@ public class ExecuteQueryHandlerTests
 
         Assert.Equal(cts.Token, _executor.Calls[0].Ct);
     }
+
+    [Fact]
+    public async Task HandleAsync_ForwardsRowLimitToExecutor()
+    {
+        await Handler().HandleAsync(new ExecuteQueryCommand("SELECT 1", "TRN", RowLimit: 500), CancellationToken.None);
+
+        Assert.Equal(500, _executor.Calls[0].RowLimit);
+    }
+
+    [Fact]
+    public async Task HandleAsync_DefaultRowLimit_IsNull_MeaningUnlimited()
+    {
+        await Handler().HandleAsync(new ExecuteQueryCommand("SELECT 1", "TRN"), CancellationToken.None);
+
+        Assert.Null(_executor.Calls[0].RowLimit);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-9999)]
+    public async Task HandleAsync_ClampsNonPositiveRowLimitToNull(int badLimit)
+    {
+        await Handler().HandleAsync(new ExecuteQueryCommand("SELECT 1", "TRN", RowLimit: badLimit), CancellationToken.None);
+
+        Assert.Null(_executor.Calls[0].RowLimit);
+    }
 }

@@ -796,6 +796,101 @@ kbd {
   background: var(--prd-soft);
   animation: prd-pulse 2.6s ease-in-out infinite;
 }
+
+/* =========================================================
+   Row-limit selector (TopBar)
+   ========================================================= */
+.limit-wrapper { position: relative; }
+.limit-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 8px 4px 10px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.limit-chip:hover { border-color: var(--accent); color: var(--text); }
+.limit-chip .limit-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-mute);
+}
+.limit-chip .limit-value {
+  font-weight: 600;
+  color: var(--text);
+}
+.limit-chip.limit-risk-soft {
+  border-color: oklch(from var(--warn) l c h / 0.45);
+  color: var(--warn);
+}
+.limit-chip.limit-risk-soft .limit-value { color: var(--warn); }
+.limit-chip.limit-risk-hard {
+  border-color: oklch(from var(--prd) l c h / 0.6);
+  color: var(--prd);
+  background: var(--prd-soft);
+}
+.limit-chip.limit-risk-hard .limit-value { color: var(--prd); }
+
+.limit-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  min-width: 240px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  z-index: 100;
+  overflow: hidden;
+}
+.limit-dropdown-head {
+  padding: 10px 12px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-mute);
+  border-bottom: 1px solid var(--border-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.limit-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 12px;
+  background: none;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  text-align: left;
+}
+.limit-item:hover { background: var(--bg-elev); color: var(--text); }
+.limit-item.is-active { background: var(--accent-soft); color: var(--accent); }
+.limit-item-label { font-weight: 600; min-width: 60px; }
+.limit-item-warn {
+  flex: 1;
+  font-size: 10px;
+  font-family: var(--font-sans, inherit);
+  font-style: italic;
+}
+.limit-item.limit-risk-soft .limit-item-warn { color: var(--warn); }
+.limit-item.limit-risk-hard .limit-item-warn { color: var(--prd); }
+.limit-dropdown-foot {
+  padding: 8px 12px 10px;
+  font-size: 10.5px;
+  color: var(--text-mute);
+  border-top: 1px solid var(--border-soft);
+  background: var(--bg);
+  line-height: 1.4;
+}
 @keyframes prd-pulse {
   0%, 100% { box-shadow: 0 0 0 0 oklch(from var(--prd) l c h / 0.3); }
   50%      { box-shadow: 0 0 0 4px oklch(from var(--prd) l c h / 0); }
@@ -962,9 +1057,48 @@ kbd {
   color: var(--text-mute);
 }
 .meta-item { display: inline-flex; align-items: center; gap: 5px; }
+.meta-item-warn { color: var(--warn); }
+.meta-trunc {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--warn);
+}
 .meta-dot { width: 6px; height: 6px; border-radius: 50%; }
 .meta-dot-trn { background: var(--trn); }
 .meta-dot-prd { background: var(--prd); }
+
+.btab-count-warn {
+  background: oklch(from var(--warn) l c h / 0.18) !important;
+  color: var(--warn) !important;
+}
+
+/* =========================================================
+   Truncated-result banner (above the results table)
+   ========================================================= */
+.truncate-banner {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex; align-items: flex-start; gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid oklch(from var(--warn) l c h / 0.45);
+  background: oklch(from var(--warn) l c h / 0.14);
+  backdrop-filter: blur(4px);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text);
+}
+.truncate-banner > svg { flex: none; margin-top: 2px; color: var(--warn); }
+.truncate-banner-strong {
+  font-weight: 700;
+  color: var(--warn);
+  margin-right: 4px;
+  white-space: nowrap;
+}
+.truncate-banner-msg { color: var(--text-dim); }
 
 .bottom-body {
   flex: 1;

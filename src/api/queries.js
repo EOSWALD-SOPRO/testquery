@@ -13,23 +13,47 @@ const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 /**
  * Execute a SQL query against TRN or PRD.
- * Returns { columns: string[], rows: any[][], took: number, plan: string }
+ *
+ * @param {string}      sql      SQL script to execute.
+ * @param {'TRN'|'PRD'} env      Target environment.
+ * @param {number|null} rowLimit Max rows to return. Null = no limit (can crash the browser
+ *                               on large result sets — exposed in the UI as "Tout").
+ *
+ * @returns {Promise<{
+ *   columns: string[], rows: any[][], rowCount: number,
+ *   took: number, plan: string,
+ *   truncated: boolean, appliedLimit: number|null
+ * }>}
  */
-export async function executeQuery(sql, env) {
+export async function executeQuery(sql, env, rowLimit = null) {
   if (USE_MOCK) {
     const delay = env === 'PRD' ? 620 : 460;
     await new Promise(r => setTimeout(r, delay));
+
+    // Simulate the truncation behaviour of the real backend so the UI can be exercised
+    // against the mock. We multiply the canned rows up so a 100-row limit is meaningful.
+    const expanded = [];
+    while (expanded.length < (rowLimit ?? 10_000)) {
+      expanded.push(...RESULT_ROWS);
+      if (expanded.length >= RESULT_ROWS.length * 800) break;
+    }
+    const sliced   = rowLimit ? expanded.slice(0, rowLimit) : expanded;
+    const truncated = rowLimit != null && expanded.length > rowLimit;
+
     return {
       columns: RESULT_COLUMNS,
-      rows: RESULT_ROWS,
+      rows: sliced,
+      rowCount: sliced.length,
       took: env === 'PRD' ? 62 : 46,
       plan: 'Clustered Index Seek + Hash Match Join',
+      truncated,
+      appliedLimit: rowLimit,
     };
   }
 
   return apiFetch('/queries/execute', {
     method: 'POST',
-    body: JSON.stringify({ sql, env }),
+    body: JSON.stringify({ sql, env, rowLimit }),
   });
 }
 

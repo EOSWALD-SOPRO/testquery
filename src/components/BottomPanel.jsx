@@ -1,12 +1,16 @@
 import { IcTable, IcHistory, IcAlert, IcBranch, IcDiff } from './Icons';
 
+function formatNumber(n) {
+  return new Intl.NumberFormat('fr-FR').format(n);
+}
+
 export function BottomPanel({ result, env, query, history, view, onView }) {
   return (
     <div className="bottom">
       <div className="bottom-tabs">
         <button className={`btab${view === "results"  ? " is-active" : ""}`} onClick={() => onView("results")}>
           <IcTable size={13}/> Resultats
-          {result && <span className="btab-count">{result.rows.length}</span>}
+          {result && <span className={`btab-count${result.truncated ? ' btab-count-warn' : ''}`}>{formatNumber(result.rows.length)}{result.truncated ? '+' : ''}</span>}
         </button>
         <button className={`btab${view === "history"  ? " is-active" : ""}`} onClick={() => onView("history")}>
           <IcHistory size={13}/> Historique
@@ -21,7 +25,10 @@ export function BottomPanel({ result, env, query, history, view, onView }) {
                 <span className={`meta-dot meta-dot-${env.toLowerCase()}`}/>
                 {env === "TRN" ? "sql-trn.soprofen.local" : "sql-prd.soprofen.local"}
               </span>
-              <span className="meta-item">{result.rows.length} lignes</span>
+              <span className={`meta-item${result.truncated ? ' meta-item-warn' : ''}`}>
+                {formatNumber(result.rows.length)} lignes
+                {result.truncated && <span className="meta-trunc"> · tronque</span>}
+              </span>
               <span className="meta-item">{result.took} ms</span>
               <span className="meta-item">{result.plan}</span>
             </>
@@ -44,6 +51,17 @@ function ResultsTable({ result }) {
   }
   return (
     <div className="tbl-wrap">
+      {result.truncated && (
+        <div className="truncate-banner" role="alert">
+          <IcAlert size={12}/>
+          <span className="truncate-banner-strong">Resultat tronque</span>
+          <span className="truncate-banner-msg">
+            Seules les {formatNumber(result.appliedLimit ?? result.rows.length)} premieres lignes sont affichees.
+            Pense a filtrer par programme ou OF (clause WHERE) — sinon augmente la limite via
+            le selecteur «&nbsp;limite&nbsp;» en haut a droite.
+          </span>
+        </div>
+      )}
       <table className="tbl">
         <thead>
           <tr>

@@ -1,7 +1,7 @@
 import React from 'react';
-import { IcFile, IcX, IcBranch, IcPlay, IcStop, IcCommit, IcPlus, IcCheck } from './Icons';
+import { IcFile, IcX, IcBranch, IcPlay, IcStop, IcCommit, IcPlus, IcCheck, IcAlert, IcChevDn } from './Icons';
 
-export function TopBar({ env, onEnv, running, onRun, onCommit, dirty, tabs, activeTab, onTab, onCloseTab, branch, branches, onBranchChange, onCreateBranch }) {
+export function TopBar({ env, onEnv, rowLimit, onRowLimit, running, onRun, onCommit, dirty, tabs, activeTab, onTab, onCloseTab, branch, branches, onBranchChange, onCreateBranch }) {
   return (
     <div className="topbar">
       <div className="tabs">
@@ -24,6 +24,7 @@ export function TopBar({ env, onEnv, running, onRun, onCommit, dirty, tabs, acti
           onBranchChange={onBranchChange}
           onCreateBranch={onCreateBranch}
         />
+        <LimitSelector value={rowLimit} onChange={onRowLimit}/>
         <EnvSwitch value={env} onChange={onEnv}/>
         <div className="topbar-sep"/>
         <button className={`btn btn-run${running ? " is-running" : ""}`} onClick={onRun} disabled={running}>
@@ -36,6 +37,83 @@ export function TopBar({ env, onEnv, running, onRun, onCommit, dirty, tabs, acti
           <span>Commit &amp; PR</span>
         </button>
       </div>
+    </div>
+  );
+}
+
+// Preset row-limit choices exposed in the TopBar.
+//
+// Sizing rationale: this is a debug tool for production queries that are normally
+// scoped by program or OF (= a few dozen rows). 50 is the typical real-world ceiling,
+// so it's the default. The bigger presets exist for two reasons:
+//   - spot-check a query without a filter (still bounded so the browser survives),
+//   - detect a missing filter — if a result hits 250/500, you forgot a WHERE.
+//
+// `risk` levels:
+//   "soft" (250) — bigger than you'd expect, filter probably missing,
+//   "hard" (500) — definitely missing a filter; the non-virtualized table starts to lag.
+//
+// There is deliberately no "unlimited" option: real-world tests showed 2000+ rows
+// already make the page sluggish, and a runaway SELECT can return tens of thousands
+// of rows. Filter your query upstream — that's what this tool is here to help with.
+const LIMIT_OPTIONS = [
+  { value:  25, label:  "25", risk: null   },
+  { value:  50, label:  "50", risk: null   },
+  { value: 100, label: "100", risk: null   },
+  { value: 250, label: "250", risk: "null" },
+  { value: 500, label: "500", risk: "soft" },
+];
+
+export function LimitSelector({ value, onChange }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+
+  // Close on outside click — cheap implementation, no library.
+  React.useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [open]);
+
+  // Fallback to "50" (index 1) when an unknown value is passed — matches the default
+  // set in App.jsx so the UI shows a coherent state instead of an unrelated preset.
+  const current = LIMIT_OPTIONS.find(o => o.value === value) || LIMIT_OPTIONS[1];
+
+  return (
+    <div className="limit-wrapper" ref={ref}>
+      <button
+        className={`limit-chip${current.risk ? ` limit-risk-${current.risk}` : ''}`}
+        onClick={() => setOpen(o => !o)}
+        title="Nombre maximum de lignes a recuperer"
+      >
+        <span className="limit-label">limite</span>
+        <span className="limit-value">{current.label}</span>
+        {current.risk && <IcAlert size={11}/>}
+        <IcChevDn size={11}/>
+      </button>
+
+      {open && (
+        <div className="limit-dropdown" role="listbox">
+          <div className="limit-dropdown-head">Lignes max</div>
+          {LIMIT_OPTIONS.map(opt => (
+            <button
+              key={opt.label}
+              role="option"
+              aria-selected={opt.value === value}
+              className={`limit-item${opt.value === value ? ' is-active' : ''}${opt.risk ? ` limit-risk-${opt.risk}` : ''}`}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+            >
+              <span className="limit-item-label">{opt.label}</span>
+              {opt.risk === 'soft' && <span className="limit-item-warn">attention risque de lagger</span>}
+              {opt.value === value && <IcCheck size={11}/>}
+            </button>
+          ))}
+          <div className="limit-dropdown-foot">
+            Outil de debug : filtre ta requete par programme ou OF.
+          </div>
+        </div>
+      )}
     </div>
   );
 }
