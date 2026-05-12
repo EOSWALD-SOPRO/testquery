@@ -18,6 +18,8 @@ export const IcPlus     = (p) => <Icon {...p}><path d="M8 3v10"/><path d="M3 8h1
 export const IcChevron  = (p) => <Icon {...p}><path d="M6 4l4 4-4 4"/></Icon>;
 export const IcChevDn   = (p) => <Icon {...p}><path d="M4 6l4 4 4-4"/></Icon>;
 export const IcHistory  = (p) => <Icon {...p}><path d="M2 8a6 6 0 106-6"/><path d="M2 3v3h3"/><path d="M8 5v3l2 2"/></Icon>;
+export const IcMonitor  = (p) => <Icon {...p}><rect x="1.5" y="2.5" width="13" height="9" rx="1"/><path d="M5 14h6"/><path d="M8 11.5V14"/></Icon>;
+export const IcPullReq  = (p) => <Icon {...p}><circle cx="4" cy="3" r="1.4"/><circle cx="4" cy="13" r="1.4"/><circle cx="12" cy="13" r="1.4"/><path d="M4 4.4v7.2"/><path d="M12 4v7.5"/><path d="M9.5 2L12 4l-2.5 2"/></Icon>;
 export const IcSpark    = (p) => <Icon {...p}><path d="M8 2v4M8 10v4M2 8h4M10 8h4"/></Icon>;
 export const IcAlert    = (p) => <Icon {...p}><path d="M8 2l6.5 11H1.5L8 2z"/><path d="M8 6v3"/><circle cx="8" cy="11" r=".5" fill="currentColor"/></Icon>;
 export const IcDiff     = (p) => <Icon {...p}><path d="M5 2v12"/><path d="M11 2v12"/><path d="M3 5h4"/><path d="M9 11h4"/></Icon>;

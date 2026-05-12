@@ -5,8 +5,13 @@ import { SqlEditor }    from './components/SqlEditor';
 import { BottomPanel }  from './components/BottomPanel';
 import { CommitDialog } from './components/CommitDialog';
 import { TweaksPanel }  from './components/TweaksPanel';
-import { IcSpark, IcFolder, IcChevron } from './components/Icons';
-import { HISTORY } from './data/mockData';
+import { WorkCenterDetail } from './components/WorkCenterDetail';
+import { WorkCenterBrowser } from './components/WorkCenterBrowser';
+import { PullRequestsView } from './components/PullRequestsView';
+import { AdminView } from './components/AdminPanel';
+import { ActivityBar } from './components/ActivityBar';
+import { IcSpark } from './components/Icons';
+import { HISTORY, WORKCENTERS } from './data/mockData';
 import { executeQuery, fetchQueries } from './api/queries';
 import { getBranches, createBranch, checkoutBranch } from './api/github';
 
@@ -92,7 +97,15 @@ export default function App() {
   // Tabs
   const [tabs, setTabs] = React.useState([]);
   const [activeTab, setActiveTab] = React.useState(null);
-  const activeQueryMeta = queries.find(q => q.id === activeTab) || queries[0] || { id: '', name: '', folder: '', branch: 'main' };
+  const activeQueryMeta = queries.find(q => q.id === activeTab) || queries[0] || { id: '', name: '', branch: 'main', source: '', attributeModel: null, workCenterId: null, requestId: null };
+
+  // Top-level navigation: editor / admin (extensible to wc-browser etc. later)
+  const [mode, setMode] = React.useState('editor');
+
+  // WorkCenter detail modal (still triggered contextually from a chip click)
+  const [selectedWc, setSelectedWc] = React.useState(null);
+  const wcById = React.useMemo(() => Object.fromEntries(WORKCENTERS.map(w => [w.id, w])), []);
+  const activeWc = activeQueryMeta.workCenterId ? wcById[activeQueryMeta.workCenterId] : null;
 
   // Editor buffers (one per tab)
   const [buffers, setBuffers] = React.useState({});
@@ -165,7 +178,27 @@ export default function App() {
   }, [run]);
 
   return (
-    <div className="app" data-layout={tweaks.layout} data-density={tweaks.density}>
+    <div className={`app app-mode-${mode}`} data-layout={tweaks.layout} data-density={tweaks.density}>
+      <ActivityBar mode={mode} onModeChange={setMode}/>
+
+      {mode === 'admin' && (
+        <div className="main"><AdminView queries={queries}/></div>
+      )}
+
+      {mode === 'workcenters' && (
+        <div className="main">
+          <WorkCenterBrowser
+            queries={queries}
+            onPickQuery={(id) => { pick(id); setMode('editor'); }}
+          />
+        </div>
+      )}
+
+      {mode === 'prs' && (
+        <div className="main"><PullRequestsView/></div>
+      )}
+
+      {mode === 'editor' && <>
       <Sidebar queries={queries} activeId={activeTab} onPick={pick} onNew={onNew} loading={queriesLoading}/>
 
       <div className="main">
@@ -185,15 +218,39 @@ export default function App() {
         <div className="workspace">
           <div className="editor-panel">
             <div className="editor-head">
-              <span className="editor-head-path">
-                <IcFolder size={11}/>
-                <b>sql/{activeQueryMeta.folder.toLowerCase().replace(/\s+/g, "-")}</b>
-                <IcChevron size={10}/>
-                <span>{activeQueryMeta.name}</span>
+              <span className={`editor-source editor-source-${activeQueryMeta.source}`}>
+                {activeQueryMeta.source === 'cu_parameter' ? 'CUParameter' : 'ProductionScreen'}
               </span>
+              <span className="editor-head-name">{activeQueryMeta.name}</span>
+              <span className="editor-head-id">{activeQueryMeta.id}</span>
               {dirty && <span className="editor-badge editor-badge-mod">modifiee</span>}
               <span className="editor-head-fill"/>
-              <span>{code.split("\n").length} lignes · {code.length} car.</span>
+              <span className="editor-head-meta">{code.split("\n").length} lignes · {code.length} car.</span>
+            </div>
+            <div className="editor-tags">
+              <div className="editor-tag-row">
+                {activeQueryMeta.requestId != null && (
+                  <span className="editor-tag-pair">
+                    <span className="editor-tag-label">Request</span>
+                    <span className="chip chip-req">#{activeQueryMeta.requestId}</span>
+                  </span>
+                )}
+                {activeQueryMeta.attributeModel && (
+                  <span className="editor-tag-pair">
+                    <span className="editor-tag-label">Modèle</span>
+                    <span className="chip chip-am">{activeQueryMeta.attributeModel}</span>
+                  </span>
+                )}
+                {activeWc && (
+                  <span className="editor-tag-pair">
+                    <span className="editor-tag-label">Poste</span>
+                    <button className="chip chip-wc" onClick={() => setSelectedWc(activeWc)} title={`${activeWc.title} · ${activeWc.establishment}`}>
+                      {activeWc.name}
+                    </button>
+                    <span className="editor-tag-soft">{activeWc.establishment}</span>
+                  </span>
+                )}
+              </div>
             </div>
             <SqlEditor value={code} onChange={setCode}/>
           </div>
@@ -208,6 +265,14 @@ export default function App() {
           />
         </div>
       </div>
+      </>}
+
+      <WorkCenterDetail
+        workCenter={selectedWc}
+        queries={queries}
+        onClose={() => setSelectedWc(null)}
+        onPickQuery={pick}
+      />
 
       <CommitDialog
         open={prOpen}

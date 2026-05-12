@@ -2,7 +2,19 @@
   "permissions": {
     "allow": [
       "Bash(node -e:*)",
-      "PowerShell(function Test-Port\\($port\\) { $c = New-Object System.Net.Sockets.TcpClient; try { $task = $c.ConnectAsync\\('localhost', $port\\); if \\($task.Wait\\(2000\\)\\) { \"Port ${port}: OPEN\" } else { \"Port ${port}: TIMEOUT\" } } catch { \"Port ${port}: CLOSED \\($\\($_.Exception.Message\\)\\)\" } finally { $c.Close\\(\\) } }; Test-Port 1433; Test-Port 62656)"
+      "PowerShell(function Test-Port\\($port\\) { $c = New-Object System.Net.Sockets.TcpClient; try { $task = $c.ConnectAsync\\('localhost', $port\\); if \\($task.Wait\\(2000\\)\\) { \"Port ${port}: OPEN\" } else { \"Port ${port}: TIMEOUT\" } } catch { \"Port ${port}: CLOSED \\($\\($_.Exception.Message\\)\\)\" } finally { $c.Close\\(\\) } }; Test-Port 1433; Test-Port 62656)",
+      "Bash(curl -sS -o /dev/null -w \"page %{http_code}\\\\nApp %{http_code}\\\\nSidebar %{http_code}\\\\nmockData %{http_code}\\\\nstyles %{http_code}\\\\n\" http://localhost:5177/ http://localhost:5177/src/App.jsx http://localhost:5177/src/components/Sidebar.jsx http://localhost:5177/src/data/mockData.js http://localhost:5177/src/styles.css)",
+      "Bash(curl -sS -o /dev/null -w \"page %{http_code}\\\\nApp %{http_code}\\\\nSidebar %{http_code}\\\\nWorkCenterDetail %{http_code}\\\\nmockData %{http_code}\\\\nstyles %{http_code}\\\\n\" http://localhost:5178/ http://localhost:5178/src/App.jsx http://localhost:5178/src/components/Sidebar.jsx http://localhost:5178/src/components/WorkCenterDetail.jsx http://localhost:5178/src/data/mockData.js http://localhost:5178/src/styles.css)",
+      "Bash(npm run *)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet run *)",
+      "PowerShell(\"placeholder removed\")",
+      "Bash(dotnet test *)",
+      "Bash(curl -sS -w '\\\\nHTTP %{http_code}\\\\n' -X POST http://localhost:5051/api/queries/execute -H 'Content-Type: application/json' -d '{\"sql\":\"DELETE FROM Operation\",\"env\":\"TRN\"}')",
+      "Bash(curl -sS -w '\\\\nHTTP %{http_code}\\\\n' -X POST http://localhost:5051/api/queries/execute -H 'Content-Type: application/json' -d '{\"sql\":\"\",\"env\":\"TRN\"}')",
+      "Bash(curl -sS -w '\\\\nHTTP %{http_code}\\\\n' -X POST http://localhost:5051/api/queries/execute -H 'Content-Type: application/json' -d '{\"sql\":\"SELECT 1\",\"env\":\"DEV\"}')",
+      "Bash(curl -sS -w '\\\\nHTTP %{http_code}\\\\n' -X POST http://localhost:5051/api/queries/execute -H 'Content-Type: application/json' -d '{\"sql\":\"SELECT 1\",\"env\":\"TRN\"}')",
+      "Bash(curl -sS -w \"\\\\nHTTP %{http_code}\\\\n\" http://localhost:5051/api/health)"
     ]
   }
 }

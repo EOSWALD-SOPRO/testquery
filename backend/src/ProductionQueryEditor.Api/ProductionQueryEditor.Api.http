@@ -1,0 +1,6 @@
+@ProductionQueryEditor.Api_HostAddress = http://localhost:5211
+
+GET {{ProductionQueryEditor.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

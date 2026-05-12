@@ -1,0 +1,20 @@
+# .NET build artifacts
+bin/
+obj/
+
+# IDE
+.vs/
+.vscode/
+
+# Secrets and the local-only override (you copy appsettings.json → appsettings.Development.json then edit it)
+appsettings.Development.json
+appsettings.Local.json
+*.user
+
+# Queries repo (a separate git clone — managed at runtime, never tracked here)
+repo/
+queries/
+
+# Logs
+*.log
+logs/
