@@ -1,13 +1,18 @@
 import React from 'react';
 import { IcSearch, IcFolder } from './Icons';
-import { WORKCENTERS } from '../data/mockData';
 import { WorkCenterCard } from './WorkCenterDetail';
 
-export function WorkCenterBrowser({ queries, onPickQuery }) {
+export function WorkCenterBrowser({ queries, workCenters = [], onPickQuery }) {
   const [q, setQ]            = React.useState("");
-  const [selectedId, setSel] = React.useState(WORKCENTERS[0]?.id ?? null);
+  const [selectedId, setSel] = React.useState(null);
 
-  const filtered = WORKCENTERS.filter(w =>
+  React.useEffect(() => {
+    if (selectedId == null && workCenters.length > 0) {
+      setSel(workCenters[0].id);
+    }
+  }, [workCenters, selectedId]);
+
+  const filtered = workCenters.filter(w =>
     !q
     || w.name.toLowerCase().includes(q.toLowerCase())
     || w.title.toLowerCase().includes(q.toLowerCase())
@@ -27,14 +32,14 @@ export function WorkCenterBrowser({ queries, onPickQuery }) {
     return map;
   }, [queries]);
 
-  const selected = WORKCENTERS.find(w => w.id === selectedId);
+  const selected = workCenters.find(w => w.id === selectedId);
 
   return (
     <div className="wc-browser">
       <aside className="wc-browser-list">
         <div className="wc-browser-head">
           <div className="wc-browser-title">Postes de charge</div>
-          <div className="wc-browser-sub">{WORKCENTERS.length} postes · {Object.keys(usageById).length} avec requêtes</div>
+          <div className="wc-browser-sub">{workCenters.length} postes · {Object.keys(usageById).length} avec requêtes</div>
         </div>
         <div className="sidebar-search">
           <IcSearch size={14}/>

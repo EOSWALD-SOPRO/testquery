@@ -1,6 +1,12 @@
 // Query execution API — SQL Server backend
 import { apiFetch } from './client';
-import { QUERIES as MOCK_QUERIES, RESULT_COLUMNS, RESULT_ROWS } from '../data/mockData';
+import {
+  QUERIES as MOCK_QUERIES,
+  RESULT_COLUMNS,
+  RESULT_ROWS,
+  WORKCENTERS as MOCK_WORKCENTERS,
+  ATTRIBUTE_MODELS as MOCK_ATTRIBUTE_MODELS,
+} from '../data/mockData';
 
 // Set to true to use mock data instead of real backend
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
@@ -52,4 +58,28 @@ export async function saveQuery(id, sql) {
     method: 'PUT',
     body: JSON.stringify({ sql }),
   });
+}
+
+/**
+ * Fetch the WorkCenter catalog (dbo.WorkCenter).
+ * Returns WORKCENTERS[] array — same shape as the mock.
+ */
+export async function fetchWorkCenters() {
+  if (USE_MOCK) {
+    return MOCK_WORKCENTERS;
+  }
+
+  return apiFetch('/queries/workcenters');
+}
+
+/**
+ * Fetch the AttributeModel catalog (dbo.AttributeModel).
+ * Returns ATTRIBUTE_MODELS[] array — same shape as the mock.
+ */
+export async function fetchAttributeModels() {
+  if (USE_MOCK) {
+    return MOCK_ATTRIBUTE_MODELS;
+  }
+
+  return apiFetch('/queries/attribute-models');
 }

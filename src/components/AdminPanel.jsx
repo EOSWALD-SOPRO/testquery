@@ -1,6 +1,5 @@
 import React from 'react';
 import { IcPlus } from './Icons';
-import { WORKCENTERS, ATTRIBUTE_MODELS } from '../data/mockData';
 
 const TABS = [
   { key: 'workcenters', label: 'WorkCenters'      },
@@ -11,7 +10,7 @@ const TABS = [
 const STUB_TOAST = "Édition non disponible — branche un backend pour activer la sauvegarde.";
 
 // Inline admin view (rendered as a full panel inside .main, not a modal).
-export function AdminView({ queries }) {
+export function AdminView({ queries, workCenters = [], attributeModels = [] }) {
   const [tab, setTab] = React.useState('workcenters');
   const [toast, setToast] = React.useState(null);
 
@@ -44,9 +43,9 @@ export function AdminView({ queries }) {
       </div>
 
       <div className="admin-body">
-        {tab === 'workcenters' && <WorkCentersTab onAction={fireStub}/>}
+        {tab === 'workcenters' && <WorkCentersTab workCenters={workCenters} onAction={fireStub}/>}
         {tab === 'screens'     && <ScreensTab queries={queries} onAction={fireStub}/>}
-        {tab === 'attrmodels'  && <AttrModelsTab onAction={fireStub}/>}
+        {tab === 'attrmodels'  && <AttrModelsTab attributeModels={attributeModels} onAction={fireStub}/>}
       </div>
 
       {toast && <div className="admin-toast">{toast}</div>}
@@ -54,12 +53,12 @@ export function AdminView({ queries }) {
   );
 }
 
-function WorkCentersTab({ onAction }) {
-  const ests = [...new Set(WORKCENTERS.map(w => w.establishment))].sort();
+function WorkCentersTab({ workCenters, onAction }) {
+  const ests = [...new Set(workCenters.map(w => w.establishment))].sort();
   return (
     <>
       <div className="admin-toolbar">
-        <span className="admin-count">{WORKCENTERS.length} postes · {ests.length} établissements</span>
+        <span className="admin-count">{workCenters.length} postes · {ests.length} établissements</span>
         <button className="btn btn-ghost" onClick={onAction}><IcPlus size={12}/> Nouveau WorkCenter</button>
       </div>
       <table className="admin-table">
@@ -75,7 +74,7 @@ function WorkCentersTab({ onAction }) {
           </tr>
         </thead>
         <tbody>
-          {WORKCENTERS.map(w => (
+          {workCenters.map(w => (
             <tr key={w.id}>
               <td className="cell-mono">{w.id}</td>
               <td className="cell-mono cell-strong">{w.name}</td>
@@ -131,11 +130,11 @@ function ScreensTab({ queries, onAction }) {
   );
 }
 
-function AttrModelsTab({ onAction }) {
+function AttrModelsTab({ attributeModels, onAction }) {
   return (
     <>
       <div className="admin-toolbar">
-        <span className="admin-count">{ATTRIBUTE_MODELS.length} modèles d'attribut</span>
+        <span className="admin-count">{attributeModels.length} modèles d'attribut</span>
         <button className="btn btn-ghost" onClick={onAction}><IcPlus size={12}/> Nouveau modèle</button>
       </div>
       <table className="admin-table">
@@ -148,7 +147,7 @@ function AttrModelsTab({ onAction }) {
           </tr>
         </thead>
         <tbody>
-          {ATTRIBUTE_MODELS.map(am => (
+          {attributeModels.map(am => (
             <tr key={am.name}>
               <td className="cell-mono">{am.id}</td>
               <td className="cell-mono cell-strong">{am.name}</td>

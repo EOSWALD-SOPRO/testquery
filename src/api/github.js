@@ -1,5 +1,6 @@
 // GitHub integration — commit, push, and open pull requests
 import { apiFetch } from './client';
+import { PULL_REQUESTS as MOCK_PULL_REQUESTS } from '../data/mockData';
 
 // Set to true to use mock data instead of real backend
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
@@ -107,6 +108,24 @@ export async function getCommitHistory(limit = 20) {
   }
 
   return apiFetch(`/github/history?limit=${limit}`);
+}
+
+/**
+ * List pull requests on the configured GitHub repo.
+ * Mock shape includes body/files/reviewers/checks. The real backend (PullRequestInfo)
+ * only returns { number, title, state, author, url, branch, createdAt } — consumers
+ * should call getPullRequestStatus(number) to enrich with checks when needed.
+ */
+export async function fetchPullRequests(state = 'open') {
+  if (USE_MOCK) {
+    const match =
+      state === 'open'   ? (pr) => pr.state !== 'merged'
+    : state === 'merged' ? (pr) => pr.state === 'merged'
+    : () => true;
+    return MOCK_PULL_REQUESTS.filter(match);
+  }
+
+  return apiFetch(`/github/pull-requests?state=${encodeURIComponent(state)}`);
 }
 
 /**

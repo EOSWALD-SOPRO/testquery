@@ -11,9 +11,35 @@ import { PullRequestsView } from './components/PullRequestsView';
 import { AdminView } from './components/AdminPanel';
 import { ActivityBar } from './components/ActivityBar';
 import { IcSpark } from './components/Icons';
-import { HISTORY, WORKCENTERS } from './data/mockData';
-import { executeQuery, fetchQueries } from './api/queries';
-import { getBranches, createBranch, checkoutBranch } from './api/github';
+import { executeQuery, fetchQueries, fetchWorkCenters, fetchAttributeModels } from './api/queries';
+import { getBranches, createBranch, checkoutBranch, getCommitHistory } from './api/github';
+
+// Map a backend CommitInfo (Hash/ShortHash/Message/Author/Date) to the shape
+// BottomPanel expects ({ hash, msg, when, branch }). The backend has no
+// branch-per-commit notion in the simple history listing, so we leave it blank
+// and let the UI fall back gracefully.
+function commitToHistoryItem(c) {
+  const iso = c.date || c.Date;
+  let when = '';
+  if (iso) {
+    const d = new Date(iso);
+    if (!Number.isNaN(d.getTime())) {
+      const diffMs = Date.now() - d.getTime();
+      const min = Math.round(diffMs / 60000);
+      if (min < 1)         when = "a l'instant";
+      else if (min < 60)   when = `il y a ${min} min`;
+      else if (min < 1440) when = `il y a ${Math.round(min / 60)} h`;
+      else                 when = d.toLocaleDateString('fr-FR');
+    }
+  }
+  return {
+    hash:   c.shortHash || c.ShortHash || (c.hash || c.Hash || '').slice(0, 7),
+    msg:    c.message   || c.Message   || '',
+    author: c.author    || c.Author    || '',
+    when,
+    branch: '',
+  };
+}
 
 export default function App() {
   const [tweaks, setTweaks] = React.useState({
@@ -43,6 +69,27 @@ export default function App() {
         console.error('[API] fetchQueries failed:', err);
         setQueriesLoading(false);
       });
+  }, []);
+
+  // Catalogs (WorkCenters + AttributeModels) — loaded once and propagated to children.
+  const [workCenters, setWorkCenters] = React.useState([]);
+  const [attributeModels, setAttributeModels] = React.useState([]);
+
+  React.useEffect(() => {
+    fetchWorkCenters()
+      .then(setWorkCenters)
+      .catch(err => console.error('[API] fetchWorkCenters failed:', err));
+    fetchAttributeModels()
+      .then(setAttributeModels)
+      .catch(err => console.error('[API] fetchAttributeModels failed:', err));
+  }, []);
+
+  // Local-repo commit history (BottomPanel "Historique" tab).
+  const [history, setHistory] = React.useState([]);
+  React.useEffect(() => {
+    getCommitHistory(20)
+      .then(list => setHistory((list || []).map(commitToHistoryItem)))
+      .catch(err => console.error('[API] getCommitHistory failed:', err));
   }, []);
 
   // Branches from API — single source of truth is the backend's local git repo
@@ -104,7 +151,10 @@ export default function App() {
 
   // WorkCenter detail modal (still triggered contextually from a chip click)
   const [selectedWc, setSelectedWc] = React.useState(null);
-  const wcById = React.useMemo(() => Object.fromEntries(WORKCENTERS.map(w => [w.id, w])), []);
+  const wcById = React.useMemo(
+    () => Object.fromEntries(workCenters.map(w => [w.id, w])),
+    [workCenters]
+  );
   const activeWc = activeQueryMeta.workCenterId ? wcById[activeQueryMeta.workCenterId] : null;
 
   // Editor buffers (one per tab)
@@ -182,13 +232,20 @@ export default function App() {
       <ActivityBar mode={mode} onModeChange={setMode}/>
 
       {mode === 'admin' && (
-        <div className="main"><AdminView queries={queries}/></div>
+        <div className="main">
+          <AdminView
+            queries={queries}
+            workCenters={workCenters}
+            attributeModels={attributeModels}
+          />
+        </div>
       )}
 
       {mode === 'workcenters' && (
         <div className="main">
           <WorkCenterBrowser
             queries={queries}
+            workCenters={workCenters}
             onPickQuery={(id) => { pick(id); setMode('editor'); }}
           />
         </div>
@@ -259,7 +316,7 @@ export default function App() {
             result={result}
             env={env}
             query={code}
-            history={HISTORY}
+            history={history}
             view={view}
             onView={setView}
           />

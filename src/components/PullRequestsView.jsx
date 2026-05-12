@@ -1,16 +1,18 @@
 import React from 'react';
 import { IcSearch, IcBranch, IcCheck, IcX, IcAlert, IcCommit } from './Icons';
-import { PULL_REQUESTS } from '../data/mockData';
+import { fetchPullRequests, getPullRequestStatus } from '../api/github';
 
 const STATE_LABEL = {
+  'open':           { label: 'En revue',          cls: 'pr-state-review' },
   'review':         { label: 'En revue',          cls: 'pr-state-review' },
   'checks-running': { label: 'Checks en cours',   cls: 'pr-state-running'},
   'checks-failed':  { label: 'Checks échoués',    cls: 'pr-state-failed' },
   'merged':         { label: 'Mergée',            cls: 'pr-state-merged' },
+  'closed':         { label: 'Fermée',            cls: 'pr-state-failed' },
 };
 
 const FILTERS = [
-  { key: 'open',   label: 'Ouvertes',  match: pr => pr.state !== 'merged' },
+  { key: 'open',   label: 'Ouvertes',  match: pr => pr.state !== 'merged' && pr.state !== 'closed' },
   { key: 'merged', label: 'Mergées',   match: pr => pr.state === 'merged' },
   { key: 'all',    label: 'Toutes',    match: () => true },
 ];
@@ -18,24 +20,50 @@ const FILTERS = [
 export function PullRequestsView() {
   const [filter, setFilter] = React.useState('open');
   const [q, setQ]           = React.useState("");
-  const [selectedNum, setSel] = React.useState(PULL_REQUESTS[0]?.number ?? null);
+  const [selectedNum, setSel] = React.useState(null);
+  const [prs, setPrs] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  // Lazy-loaded checks/details keyed by PR number — backend list endpoint is summary-only.
+  const [details, setDetails] = React.useState({});
+
+  React.useEffect(() => {
+    setLoading(true);
+    // The backend filters by state server-side, but to keep tab counts accurate
+    // we fetch "all" once and filter client-side.
+    fetchPullRequests('all')
+      .then(list => {
+        setPrs(list || []);
+        if ((list || []).length > 0) setSel(list[0].number);
+      })
+      .catch(err => console.error('[API] fetchPullRequests failed:', err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Pull checks lazily when the user selects a PR.
+  React.useEffect(() => {
+    if (selectedNum == null) return;
+    if (details[selectedNum]) return;
+    getPullRequestStatus(selectedNum)
+      .then(status => setDetails(d => ({ ...d, [selectedNum]: status })))
+      .catch(err => console.error('[API] getPullRequestStatus failed:', err));
+  }, [selectedNum, details]);
 
   const filterFn = FILTERS.find(f => f.key === filter)?.match || (() => true);
-  const filtered = PULL_REQUESTS
+  const filtered = prs
     .filter(filterFn)
     .filter(pr => !q
-      || pr.title.toLowerCase().includes(q.toLowerCase())
-      || pr.branch.toLowerCase().includes(q.toLowerCase())
-      || pr.author.toLowerCase().includes(q.toLowerCase())
+      || (pr.title || '').toLowerCase().includes(q.toLowerCase())
+      || (pr.branch || '').toLowerCase().includes(q.toLowerCase())
+      || (pr.author || '').toLowerCase().includes(q.toLowerCase())
       || String(pr.number).includes(q)
     );
 
   const counts = FILTERS.reduce((acc, f) => {
-    acc[f.key] = PULL_REQUESTS.filter(f.match).length;
+    acc[f.key] = prs.filter(f.match).length;
     return acc;
   }, {});
 
-  const selected = PULL_REQUESTS.find(p => p.number === selectedNum);
+  const selected = prs.find(p => p.number === selectedNum);
 
   return (
     <div className="pr-view">
@@ -66,7 +94,10 @@ export function PullRequestsView() {
         </div>
 
         <div className="pr-list-scroll">
-          {filtered.map(pr => {
+          {loading && (
+            <div className="sidebar-empty">Chargement…</div>
+          )}
+          {!loading && filtered.map(pr => {
             const meta = STATE_LABEL[pr.state] || STATE_LABEL.review;
             return (
               <button key={pr.number}
@@ -82,64 +113,90 @@ export function PullRequestsView() {
               </button>
             );
           })}
-          {filtered.length === 0 && (
+          {!loading && filtered.length === 0 && (
             <div className="sidebar-empty">Aucune PR ne correspond.</div>
           )}
         </div>
       </aside>
 
       <div className="pr-pane">
-        {selected ? <PullRequestDetail pr={selected}/> : <div className="wc-empty">Sélectionne une PR à gauche.</div>}
+        {selected
+          ? <PullRequestDetail pr={selected} detail={details[selected.number]}/>
+          : <div className="wc-empty">{loading ? 'Chargement…' : 'Sélectionne une PR à gauche.'}</div>
+        }
       </div>
     </div>
   );
 }
 
-function PullRequestDetail({ pr }) {
+function PullRequestDetail({ pr, detail }) {
+  // The summary endpoint and the status endpoint each contribute different pieces.
+  // Use whichever has data; fall back to "—" when neither does.
   const meta = STATE_LABEL[pr.state] || STATE_LABEL.review;
+  const checks    = detail?.checks    || pr.checks    || [];
+  const files     = pr.files                          || [];
+  const reviewers = pr.reviewers                      || [];
+  const body      = pr.body                           || '';
+  const baseRef   = pr.base                           || 'main';
+  const createdAt = pr.createdAt ? new Date(pr.createdAt) : null;
+  const createdStr = createdAt && !Number.isNaN(createdAt.getTime())
+    ? createdAt.toLocaleString('fr-FR')
+    : '';
+  const isMerged  = (detail?.merged) || pr.state === 'merged';
+
   return (
     <>
       <div className="modal-head">
         <div>
-          <div className="modal-eyebrow">PR #{pr.number} · ouverte par {pr.author}</div>
+          <div className="modal-eyebrow">PR #{pr.number}{pr.author ? ` · ouverte par ${pr.author}` : ''}</div>
           <div className="modal-title">{pr.title}</div>
           <div className="wc-subtitle">
-            <IcBranch size={11}/> {pr.branch} → {pr.base} · {new Date(pr.createdAt).toLocaleString('fr-FR')}
+            <IcBranch size={11}/> {pr.branch} → {baseRef}{createdStr && ` · ${createdStr}`}
+            {pr.url && <> · <a href={pr.url} target="_blank" rel="noreferrer">GitHub ↗</a></>}
           </div>
         </div>
         <span className={`pr-state-badge ${meta.cls}`}>{meta.label}</span>
       </div>
 
       <div className="modal-body">
-        <div className="wc-block">
-          <div className="wc-block-title">Description</div>
-          <p className="pr-body">{pr.body}</p>
-        </div>
+        {body && (
+          <div className="wc-block">
+            <div className="wc-block-title">Description</div>
+            <p className="pr-body">{body}</p>
+          </div>
+        )}
 
         <div className="wc-block">
-          <div className="wc-block-title">GitHub Actions ({pr.checks.length} checks)</div>
+          <div className="wc-block-title">GitHub Actions ({checks.length} check{checks.length > 1 ? 's' : ''})</div>
           <div className="pr-checks">
-            {pr.checks.map(c => <CheckRow key={c.name} check={c}/>)}
+            {checks.length === 0 && (
+              <div className="wc-empty">{detail ? 'Aucun check rapporté.' : 'Chargement des checks…'}</div>
+            )}
+            {checks.map(c => <CheckRow key={c.name} check={c}/>)}
           </div>
         </div>
 
-        <div className="wc-block">
-          <div className="wc-block-title">Fichiers modifiés ({pr.files.length})</div>
-          <div className="pr-files">
-            {pr.files.map(f => (
-              <div key={f} className="pr-file"><IcCommit size={11}/> {f}</div>
-            ))}
+        {files.length > 0 && (
+          <div className="wc-block">
+            <div className="wc-block-title">Fichiers modifiés ({files.length})</div>
+            <div className="pr-files">
+              {files.map(f => (
+                <div key={f} className="pr-file"><IcCommit size={11}/> {f}</div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="wc-block">
-          <div className="wc-block-title">Reviewers ({pr.reviewers.length})</div>
-          <div className="chip-row">
-            {pr.reviewers.map(r => <span key={r} className="chip chip-est">{r}</span>)}
+        {reviewers.length > 0 && (
+          <div className="wc-block">
+            <div className="wc-block-title">Reviewers ({reviewers.length})</div>
+            <div className="chip-row">
+              {reviewers.map(r => <span key={r} className="chip chip-est">{r}</span>)}
+            </div>
           </div>
-        </div>
+        )}
 
-        {pr.state !== 'merged' && (
+        {!isMerged && (
           <div className="pr-actions">
             <button className="btn-ghost" disabled title="Backend requis">Approuver</button>
             <button className="btn btn-commit" disabled title="Backend requis">Merger vers main</button>
