@@ -4,4 +4,11 @@ namespace ProductionQueryEditor.Application.UseCases.ExecuteQuery;
 /// <param name="Sql">Raw SQL script — validated by SqlScript VO.</param>
 /// <param name="Env">"TRN" | "PRD" — validated by EnvironmentName VO.</param>
 /// <param name="RowLimit">Max rows to return. Null = unlimited.</param>
-public sealed record ExecuteQueryCommand(string? Sql, string? Env, int? RowLimit = null);
+/// <param name="WorkCenterId">Valeur pour <c>@WorkCenter</c>/<c>@WorkCenterId</c> dans le script. Null = pas de liaison.</param>
+/// <param name="AttributeModel">Valeur pour <c>@AttributeModel</c> dans le script. Null = pas de liaison.</param>
+public sealed record ExecuteQueryCommand(
+    string? Sql,
+    string? Env,
+    int? RowLimit = null,
+    int? WorkCenterId = null,
+    string? AttributeModel = null);

@@ -32,7 +32,13 @@ public sealed class ExecuteQueryHandler
         // an empty result set, which is more confusing than a noop.
         var rowLimit = cmd.RowLimit is > 0 ? cmd.RowLimit : null;
 
-        var response = await _executor.ExecuteAsync(sqlResult.Value!, envResult.Value!, rowLimit, ct);
+        // Normalise les valeurs cote UI : un AttributeModel blanc/vide doit etre traite
+        // comme "absent" (typiquement les CUParameter qui n'envoient rien).
+        var parameters = new SqlQueryParameters(
+            cmd.WorkCenterId,
+            string.IsNullOrWhiteSpace(cmd.AttributeModel) ? null : cmd.AttributeModel);
+
+        var response = await _executor.ExecuteAsync(sqlResult.Value!, envResult.Value!, rowLimit, parameters, ct);
         return Result<ExecuteQueryResponse>.Success(response);
     }
 }

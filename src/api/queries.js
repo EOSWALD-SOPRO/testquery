@@ -18,6 +18,13 @@ const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
  * @param {'TRN'|'PRD'} env      Target environment.
  * @param {number|null} rowLimit Max rows to return. Null = no limit (can crash the browser
  *                               on large result sets — exposed in the UI as "Tout").
+ * @param {{ workCenterId?: number|null, attributeModel?: string|null }} [params]
+ *                               Valeurs liees aux placeholders du script :
+ *                                 - workCenterId : alimente @WorkCenter et @WorkCenterId.
+ *                                 - attributeModel : alimente @AttributeModel.
+ *                               Le backend ne lie que les placeholders effectivement
+ *                               references — un script qui ne mentionne pas @WorkCenter
+ *                               ne recevra rien meme si on transmet la valeur.
  *
  * @returns {Promise<{
  *   columns: string[], rows: any[][], rowCount: number,
@@ -25,10 +32,20 @@ const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
  *   truncated: boolean, appliedLimit: number|null
  * }>}
  */
-export async function executeQuery(sql, env, rowLimit = null) {
+export async function executeQuery(sql, env, rowLimit = null, params = {}) {
+  const workCenterId   = params.workCenterId   ?? null;
+  const attributeModel = params.attributeModel ?? null;
+
   if (USE_MOCK) {
     const delay = env === 'PRD' ? 620 : 460;
     await new Promise(r => setTimeout(r, delay));
+
+    // En mock il n'y a pas de SQL Server pour resoudre les placeholders : on logge
+    // ce qui aurait ete lie pour que le dev puisse verifier visuellement que la meta
+    // de l'onglet actif arrive bien jusqu'a la couche d'execution.
+    if (/@(WorkCenter|AttributeModel)\b/i.test(sql)) {
+      console.info('[mock] executeQuery params:', { workCenterId, attributeModel });
+    }
 
     // Simulate the truncation behaviour of the real backend so the UI can be exercised
     // against the mock. We multiply the canned rows up so a 100-row limit is meaningful.
@@ -53,7 +70,7 @@ export async function executeQuery(sql, env, rowLimit = null) {
 
   return apiFetch('/queries/execute', {
     method: 'POST',
-    body: JSON.stringify({ sql, env, rowLimit }),
+    body: JSON.stringify({ sql, env, rowLimit, workCenterId, attributeModel }),
   });
 }
 

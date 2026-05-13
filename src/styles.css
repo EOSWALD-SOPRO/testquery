@@ -112,7 +112,7 @@ kbd {
   grid-template-rows: 48px 1fr;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .app[data-layout="stack"] .main { grid-template-rows: 48px auto 1fr; }
@@ -965,7 +965,7 @@ kbd {
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  overflow: hidden;
+  overflow: auto;
   border-bottom: 1px solid var(--border);
 }
 .editor-head {
@@ -1022,7 +1022,7 @@ kbd {
   display: flex; flex-direction: column;
   min-height: 0;
   min-width: 0;
-  overflow: hidden;
+  overflow: auto;
   background: var(--bg);
 }
 .bottom-tabs {

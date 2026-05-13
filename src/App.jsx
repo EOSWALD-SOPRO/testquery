@@ -212,19 +212,27 @@ export default function App() {
     setActiveTab(id);
   };
 
-  // Execute query via API
+  // Execute query via API.
+  //
+  // On envoie systematiquement la meta de l'onglet actif (workCenterId + attributeModel)
+  // pour que le backend resolve les placeholders @WorkCenter / @AttributeModel comme le
+  // ferait le moteur SOPROFEN au runtime. Le backend ne lie que les placeholders
+  // reellement reference par le script — donc on peut transmettre les deux sans risque.
   const run = React.useCallback(async () => {
     setRunning(true);
     setView(v => (v !== "results" ? v : "results"));
     try {
-      const data = await executeQuery(code, env, rowLimit);
+      const data = await executeQuery(code, env, rowLimit, {
+        workCenterId:   activeQueryMeta.workCenterId,
+        attributeModel: activeQueryMeta.attributeModel,
+      });
       setResult(data);
     } catch (err) {
       console.error('[API] executeQuery failed:', err);
     } finally {
       setRunning(false);
     }
-  }, [code, env, rowLimit]);
+  }, [code, env, rowLimit, activeQueryMeta.workCenterId, activeQueryMeta.attributeModel]);
 
   // Keyboard shortcut ⌘↵ / Ctrl+↵
   React.useEffect(() => {

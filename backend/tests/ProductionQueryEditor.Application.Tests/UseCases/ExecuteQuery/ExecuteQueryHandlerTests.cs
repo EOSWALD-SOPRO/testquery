@@ -132,4 +132,40 @@ public class ExecuteQueryHandlerTests
 
         Assert.Null(_executor.Calls[0].RowLimit);
     }
+
+    // ── Liaison @WorkCenter / @AttributeModel ────────────────────────────────
+    [Fact]
+    public async Task HandleAsync_ForwardsWorkCenterAndAttributeModel_ToExecutor()
+    {
+        await Handler().HandleAsync(
+            new ExecuteQueryCommand("SELECT 1", "TRN", WorkCenterId: 136, AttributeModel: "COULISSE"),
+            CancellationToken.None);
+
+        Assert.Equal(136,        _executor.Calls[0].Parameters.WorkCenterId);
+        Assert.Equal("COULISSE", _executor.Calls[0].Parameters.AttributeModel);
+    }
+
+    [Fact]
+    public async Task HandleAsync_DefaultParameters_AreAllNull()
+    {
+        await Handler().HandleAsync(new ExecuteQueryCommand("SELECT 1", "TRN"), CancellationToken.None);
+
+        Assert.Null(_executor.Calls[0].Parameters.WorkCenterId);
+        Assert.Null(_executor.Calls[0].Parameters.AttributeModel);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("\t\n")]
+    public async Task HandleAsync_BlankAttributeModel_IsNormalizedToNull(string blank)
+    {
+        // CUParameter envoie typiquement "" depuis l'UI — on doit le traiter comme "absent"
+        // pour ne pas tenter de lier @AttributeModel avec une chaine vide.
+        await Handler().HandleAsync(
+            new ExecuteQueryCommand("SELECT 1", "TRN", AttributeModel: blank),
+            CancellationToken.None);
+
+        Assert.Null(_executor.Calls[0].Parameters.AttributeModel);
+    }
 }

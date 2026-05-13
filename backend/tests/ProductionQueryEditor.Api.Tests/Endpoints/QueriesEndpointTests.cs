@@ -79,6 +79,7 @@ public class QueriesEndpointTests : IClassFixture<TestApplicationFactory>
     [Fact]
     public async Task Execute_HappyPath_Returns200AndCallsExecutor()
     {
+        _factory.SqlExecutor.Calls.Clear();
         var client = _factory.CreateClient();
         var resp = await client.PostAsJsonAsync("/api/queries/execute",
             new { sql = "SELECT 1", env = "TRN" });
@@ -113,5 +114,26 @@ public class QueriesEndpointTests : IClassFixture<TestApplicationFactory>
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         Assert.Equal("EMPTY_SQL", body!.Code);
+    }
+
+    [Fact]
+    public async Task Execute_ForwardsWorkCenterAndAttributeModelFromBody_ToExecutor()
+    {
+        _factory.SqlExecutor.Calls.Clear();
+        var client = _factory.CreateClient();
+
+        var resp = await client.PostAsJsonAsync("/api/queries/execute",
+            new
+            {
+                sql            = "SELECT * FROM dbo.Operation WHERE op.WorkCenterId = @WorkCenter",
+                env            = "TRN",
+                workCenterId   = 136,
+                attributeModel = "COULISSE",
+            });
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var call = Assert.Single(_factory.SqlExecutor.Calls);
+        Assert.Equal(136,        call.Parameters.WorkCenterId);
+        Assert.Equal("COULISSE", call.Parameters.AttributeModel);
     }
 }
